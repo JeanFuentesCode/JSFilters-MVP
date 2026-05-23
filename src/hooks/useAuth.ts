@@ -1,11 +1,25 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 
 export function useAuth() {
-  const [user, setUser] = useState<null | any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Lógica de Supabase auth listener
+    // Obtener la sesión actual al cargar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Escuchar cambios en la autenticación (login, logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  return { user };
+  return { user, loading };
 }
